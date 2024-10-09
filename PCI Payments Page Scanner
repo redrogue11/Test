@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page Security Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        h1, h2 { color: #333; }
+        #results, #scripts { margin-top: 20px; }
+        .vulnerability, .script { background-color: #f4f4f4; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
+        .High { border-left: 5px solid #ff4444; }
+        .Medium { border-left: 5px solid #ffbb33; }
+        .Low { border-left: 5px solid #00C851; }
+        .script { border-left: 5px solid #33b5e5; }
+    </style>
+</head>
+<body>
+    <h1>Payment Page Security Scanner</h1>
+    <p>Enter the URL of a payment or checkout page to scan for potential security vulnerabilities and list all scripts.</p>
+    <form id="scanForm">
+        <input type="url" id="urlInput" placeholder="Enter payment page URL" required>
+        <button type="submit">Scan</button>
+    </form>
+    <div id="results"></div>
+    <div id="scripts"></div>
+
+    <script>
+        document.getElementById('scanForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('urlInput').value;
+            const resultsDiv = document.getElementById('results');
+            const scriptsDiv = document.getElementById('scripts');
+            resultsDiv.innerHTML = 'Scanning...';
+            scriptsDiv.innerHTML = '';
+
+            try {
+                const response = await axios.post('/scan', { url });
+                const { vulnerabilities, scripts } = response.data;
+                
+                if (vulnerabilities.length === 0) {
+                    resultsDiv.innerHTML = '<p>No vulnerabilities detected. However, always conduct thorough security audits for payment systems.</p>';
+                } else {
+                    let html = '<h2>Detected Vulnerabilities:</h2>';
+                    vulnerabilities.forEach(v => {
+                        html += `
+                            <div class="vulnerability ${v.severity}">
+                                <h3>${v.type} (${v.severity} Severity)</h3>
+                                <p>${v.description}</p>
+                                ${v.count ? `<p>Occurrences: ${v.count}</p>` : ''}
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML = html;
+                }
+
+                let scriptsHtml = '<h2>Scripts on the Page:</h2>';
+                scripts.forEach(s => {
+                    scriptsHtml += `
+                        <div class="script">
+                            <h3>${s.type} Script</h3>
+                            ${s.src ? `<p>Source: ${s.src}</p>` : `<p>Content: ${s.content}</p>`}
+                        </div>
+                    `;
+                });
+                scriptsDiv.innerHTML = scriptsHtml;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
